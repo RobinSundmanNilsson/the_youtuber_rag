@@ -23,9 +23,8 @@ def ingest_docs_to_vector_db(table):
         video_id = file.stem
         title = file.stem.replace("_", " ")
 
-        # calculate embedding
-        emb = embed_model.encode([text])[0]  # numpy array
-        emb = emb.tolist()  # transform to python list
+        emb = embed_model.encode([text])[0]
+        emb = emb.tolist()
 
         rows.append(
             {
