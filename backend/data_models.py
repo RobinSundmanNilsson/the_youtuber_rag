@@ -9,6 +9,8 @@ load_dotenv()
 #     name="all-MiniLM-L6-v2"
 # )
 
+# EMBEDDING_DIM = 3072
+
 EMBEDDING_DIM = 384 # all-MiniLM-L6-v2
 
 
