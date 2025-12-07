@@ -3,3 +3,9 @@
 # azure-monitor-opentelemetry
 
 azure-functions
+fastapi
+google-generativeai
+lancedb
+pydantic-ai
+uvicorn
+sentence-transformers
