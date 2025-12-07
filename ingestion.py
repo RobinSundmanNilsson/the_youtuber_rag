@@ -1,18 +1,44 @@
-from backend.constants import VECTOR_DATABASE_PATH, DATA_PATH
-import lancedb
-from backend.data_models import Transcript
+import os
 from pathlib import Path
-from sentence_transformers import SentenceTransformer
+
+import lancedb
+from dotenv import load_dotenv
+from google import generativeai as genai
+
+from backend.constants import VECTOR_DATABASE_PATH, DATA_PATH
+from backend.data_models import Transcript, EMBEDDING_DIM
 
 TABLE_NAME = "transcripts"
 
-embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+load_dotenv()
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    raise RuntimeError("GOOGLE_API_KEY is not set")
+
+genai.configure(api_key=GOOGLE_API_KEY)
+EMBEDDING_MODEL = "text-embedding-004"
 
 def setup_vector_db(path):
     Path(path).mkdir(exist_ok=True)
     vector_db = lancedb.connect(uri=path)
+    if TABLE_NAME in vector_db.table_names():
+        vector_db.drop_table(TABLE_NAME)
     vector_db.create_table(TABLE_NAME, schema=Transcript, exist_ok=True)
     return vector_db
+
+def embed_text(text: str) -> list[float]:
+    response = genai.embed_content(
+        model=EMBEDDING_MODEL,
+        content=text,
+        task_type="retrieval_document",
+    )
+    embedding = response.get("embedding")
+    if not embedding:
+        raise RuntimeError("Embedding service returned an empty embedding for document.")
+    if len(embedding) != EMBEDDING_DIM:
+        raise RuntimeError(f"Embedding length mismatch: expected {EMBEDDING_DIM}, got {len(embedding)}")
+    return embedding
 
 def ingest_docs_to_vector_db(table):
     rows = []
@@ -23,8 +49,7 @@ def ingest_docs_to_vector_db(table):
         video_id = file.stem
         title = file.stem.replace("_", " ")
 
-        emb = embed_model.encode([text])[0]
-        emb = emb.tolist()
+        emb = embed_text(text)
 
         rows.append(
             {
@@ -40,28 +65,6 @@ def ingest_docs_to_vector_db(table):
 
     print("Ingested", len(rows), "transcripts")
     print(table.to_pandas().head())
-
-# def ingest_docs_to_vector_db(table):
-#     for file in DATA_PATH.glob("*.md"):
-#         content = file.read_text(encoding="utf-8")
-
-#         video_id = file.stem
-#         title = file.stem.replace("_", " ")
-
-#         table.delete(f"video_id = '{video_id}'")
-
-#         table.add(
-#             [
-#                 {
-#                     "video_id": video_id,
-#                     "title": title,
-#                     "text": content,
-#                 }
-#             ]
-#         )
-
-#     print(table.to_pandas().head())
-#     print("Rows:", table.count_rows())
 
 
 if __name__ == "__main__":

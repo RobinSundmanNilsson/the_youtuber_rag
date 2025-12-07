@@ -1,24 +1,16 @@
 from pydantic import BaseModel, Field
-from lancedb.embeddings import get_registry
 from lancedb.pydantic import LanceModel, Vector
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# embedding_model = get_registry().get("sentence-transformers").create(
-#     name="all-MiniLM-L6-v2"
-# )
-
-# EMBEDDING_DIM = 3072
-
-EMBEDDING_DIM = 384 # all-MiniLM-L6-v2
-
+EMBEDDING_DIM = 768
 
 class Transcript(LanceModel):
     video_id: str = Field(description="ID based on the filename, without extension")
     title: str = Field(description="Readable name of transcript")
-    text: str = Field(description="Raw transcript text") # = embedding_model.SourceField()
-    embedding: Vector(EMBEDDING_DIM) # = embedding_model.VectorField()
+    text: str = Field(description="Raw transcript text")
+    embedding: Vector(EMBEDDING_DIM)
 
 
 class Prompt(BaseModel):

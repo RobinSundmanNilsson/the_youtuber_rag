@@ -3,7 +3,6 @@ import streamlit as st
 
 API_URL = "http://127.0.0.1:7071/rag/query"
 
-
 def layout():
     st.set_page_config(
         page_title="The YouTuber RAG",
