@@ -1,7 +1,17 @@
 import requests
 import streamlit as st
+import os
+from dotenv import load_dotenv
 
-API_URL = "http://127.0.0.1:7071/rag/query"
+load_dotenv()
+
+# API_URL = "http://127.0.0.1:7071/rag/query"
+
+key = os.getenv("AZURE_FUNCTION_APP_KEY")
+if not key:
+    st.error("AZURE_FUNCTION_APP_KEY is not set")
+    st.stop()
+API_URL = f"https://youtuber-rag-azure-function.azurewebsites.net/rag/query?code={key}"
 
 def layout():
     st.set_page_config(
