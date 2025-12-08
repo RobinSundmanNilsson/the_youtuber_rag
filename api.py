@@ -11,7 +11,6 @@ async def query_documentation(query: Prompt) -> RagResponse:
     try:
         result = await rag_agent.run(query.prompt)
     except ModelHTTPError as e:
-        # Surface upstream model/rate-limit errors with the proper status code
         raise HTTPException(
             status_code=getattr(e, "status_code", status.HTTP_502_BAD_GATEWAY),
             detail={
@@ -22,9 +21,8 @@ async def query_documentation(query: Prompt) -> RagResponse:
             },
         )
     except HTTPException:
-        raise  # Let FastAPI handle already-structured HTTP errors
+        raise
     except Exception as e:
-        # Fallback for unexpected server errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
