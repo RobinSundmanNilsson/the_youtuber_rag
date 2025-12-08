@@ -12,7 +12,7 @@ class Transcript(LanceModel):
     video_id: str = Field(description="ID based on the filename, without extension")
     title: str = Field(description="Readable name of transcript")
     text: str = embedding_model.SourceField()
-    embedding: Vector(EMBEDDING_DIM)
+    embedding: Vector(EMBEDDING_DIM) = embedding_model.VectorField()
 
 
 class Prompt(BaseModel):

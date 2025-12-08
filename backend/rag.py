@@ -1,5 +1,5 @@
 from pydantic_ai import Agent
-from backend.data_models import RagResponse
+from backend.data_models import RagResponse, embedding_model
 from backend.constants import VECTOR_DATABASE_PATH
 import lancedb
 
@@ -59,7 +59,8 @@ def retrieve_top_transcripts(query: str, k: int = 3) -> str:
     and as metadata to fill RagResponse.sources.
     """
 
-    results = vector_db["transcripts"].search(query=query).limit(k).to_list()
+    query_vector = embedding_model.compute_query_embeddings([query])[0]
+    results = vector_db["transcripts"].search(query_vector).limit(k).to_list()
 
     if not results:
         return "No results, no matching transcripts were found in the knowledge base."
