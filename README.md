@@ -79,6 +79,16 @@ AZURE_FUNCTION_APP_KEY=your-function-key (Optional)
 
 ---
 
+## ⚡ Quickstart (local)
+
+1) Create/activate venv and install deps (`uv init && source .venv/bin/activate && uv sync`).
+2) Add `.env` with `GOOGLE_API_KEY=...` (and optionally `AZURE_FUNCTION_APP_KEY` if you’ll call a deployed Function).
+3) Ingest transcripts: `uv run ingestion.py`.
+4) Start local Function host (FastAPI via Azure Functions): `uv run func start`.
+5) Run Streamlit UI: `uv run streamlit run frontend/app.py` (use the local `API_URL` in `frontend/app.py` when testing locally).
+
+---
+
 ## 📥 Ingest Data Into LanceDB
 
 Before running the RAG system the first time, run:
@@ -129,12 +139,16 @@ Features:
 - Pretty display of answers
 - Dynamic list of transcript sources used for grounding
 
+API URL configuration (`frontend/app.py`):
+- Local Functions: uncomment `API_URL = "http://127.0.0.1:7071/rag/query"` to hit your locally running `uv run func start`.
+- Deployed Azure Function: keep the env-based config. Set `AZURE_FUNCTION_APP_KEY` in your `.env` (value from Azure Function App → Functions → App Keys) and the app will call `https://<YOUR-FUNCTION-APP-NAME>.azurewebsites.net/rag/query?code=${AZURE_FUNCTION_APP_KEY}`.
+
 ---
 
 ## 🔍 How the RAG System Works
 
 ### **Embedding**
-User query → embedded using MiniLM → vector search in LanceDB.
+User query → embedded with Gemini (`gemini-embedding-001`) via LanceDB registry → vector search in LanceDB.
 
 ### **Retrieval**
 Top-k relevant transcript chunks returned via a PydanticAI tool (`retrieve_top_transcripts`).
@@ -186,11 +200,18 @@ curl -X POST http://127.0.0.1:8000/rag/query \
 
 `local.settings.json` maintains non-production configuration.
 
-Local Functions runtime:
+Local Functions runtime (smoke-test before deploy):
 
 ```bash
 uv run func start
 ```
+
+Make sure `GOOGLE_API_KEY` is available locally (e.g. via `.env`) so the local Functions host can call Gemini.
+
+Deploy flow:
+- Deploy the Function App (same FastAPI app proxied via `function_app.py`).
+- In Azure Portal: Function App → Settings → Environment Variables → add `GOOGLE_API_KEY` (no quotes) and restart.
+- To call the deployed API from local Streamlit, grab an app key under Function App → Functions → App Keys, set it in your local `.env` as `AZURE_FUNCTION_APP_KEY=...`, and the app will automatically append it as `?code=${AZURE_FUNCTION_APP_KEY}` to the API URL.
 
 ---
 
