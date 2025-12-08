@@ -1,36 +1,9 @@
-import os
-
-import lancedb
-from dotenv import load_dotenv
-from google import generativeai as genai
 from pydantic_ai import Agent
-
-from backend.constants import VECTOR_DATABASE_PATH
 from backend.data_models import RagResponse
+from backend.constants import VECTOR_DATABASE_PATH
+import lancedb
 
-load_dotenv()
-
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    raise RuntimeError("GOOGLE_API_KEY is not set")
-
-genai.configure(api_key=GOOGLE_API_KEY)
-EMBEDDING_MODEL = "text-embedding-004"
-
-vector_db = lancedb.connect(str(VECTOR_DATABASE_PATH))
-transcript_table = vector_db.open_table("transcripts")
-
-def embed_query(text: str) -> list[float]:
-    """Embed a user query using Gemini embeddings for LanceDB search."""
-    response = genai.embed_content(
-        model=EMBEDDING_MODEL,
-        content=text,
-        task_type="retrieval_query",
-    )
-    embedding = response.get("embedding")
-    if not embedding:
-        raise RuntimeError("Embedding service returned an empty embedding for query.")
-    return embedding
+vector_db = lancedb.connect(uri=VECTOR_DATABASE_PATH)
 
 system_prompt = """
 You are a programming and data engineering instructor modeled after the YouTuber
@@ -86,13 +59,7 @@ def retrieve_top_transcripts(query: str, k: int = 3) -> str:
     and as metadata to fill RagResponse.sources.
     """
 
-    query_embedding = embed_query(query)
-
-    results = (
-        transcript_table.search(query_embedding)
-        .limit(k)
-        .to_list()
-    )
+    results = vector_db["transcripts"].search(query=query).limit(k).to_list()
 
     if not results:
         return "No results, no matching transcripts were found in the knowledge base."
